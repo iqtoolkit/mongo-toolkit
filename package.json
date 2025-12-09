@@ -1,0 +1,29 @@
+{
+  "name": "mongo-toolkit",
+  "version": "0.1.0",
+  "description": "Categorized MongoDB administration diagnostics inspired by iqtoolkit/pgtools.",
+  "bin": {
+    "mongo-toolkit": "./bin/mongo-toolkit.js"
+  },
+  "scripts": {
+    "start": "node ./bin/mongo-toolkit.js",
+    "test": "node --test"
+  },
+  "keywords": [
+    "mongodb",
+    "cli",
+    "dba",
+    "iqtoolkit",
+    "operations"
+  ],
+  "author": "IQtoolkit",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "mongodb": "^5.9.2",
+    "yargs": "^17.7.2"
+  }
+}
