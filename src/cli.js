@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
 const chalk = require('chalk');
@@ -60,14 +62,38 @@ function listCategories() {
 
 async function runIssue(issue, argv) {
   const state = {};
-  return withMongoClient(argv.uri, argv.database, ({ client, db, adminDb }) =>
-    issue.run({ client, db, adminDb, options: argv, state }),
+  return withMongoClient(
+    argv.uri,
+    argv.database,
+    ({ client, db, adminDb }) => issue.run({ client, db, adminDb, options: argv, state }),
+    {
+      onConnected: async ({ adminDb, dbName, target }) => {
+        if (argv.json) return;
+
+        console.log(chalk.gray(`Connected to ${target} (db: ${dbName})`));
+        try {
+          const hello = await adminDb.command({ hello: 1 });
+          const topology = hello.setName ? `replicaSet ${hello.setName}` : hello.msg ? hello.msg : 'standalone';
+          const identity = hello.me || hello.primary;
+          const suffix = identity ? ` — ${identity}` : '';
+          console.log(chalk.gray(`Server: ${topology}${suffix}`));
+        } catch {
+          // Ignore: some roles/environments may restrict hello output.
+        }
+      },
+    },
   );
 }
 
 yargs(hideBin(process.argv))
   .scriptName('mongo-toolkit')
   .usage('$0 <command> [options]')
+  .option('uri', {
+    alias: ['u', 'mongoUri'],
+    describe: 'MongoDB connection string (or set MONGODB_URI in the environment/.env)',
+    type: 'string',
+    default: process.env.MONGODB_URI,
+  })
   .command(
     'categories',
     'List available issue categories',
@@ -130,11 +156,6 @@ yargs(hideBin(process.argv))
           describe: 'Issue identifier',
           type: 'string',
         })
-        .option('uri', {
-          describe: 'MongoDB connection string',
-          demandOption: true,
-          type: 'string',
-        })
         .option('database', {
           describe: 'Database name to target when applicable',
           default: 'admin',
@@ -154,6 +175,12 @@ yargs(hideBin(process.argv))
           type: 'number',
         }),
     async (argv) => {
+      if (!argv.uri) {
+        console.error(chalk.red('Missing MongoDB connection string. Provide --uri (or set MONGODB_URI in .env).'));
+        process.exitCode = 1;
+        return;
+      }
+
       const issue = getIssueById(argv.issueId);
       if (!issue) {
         console.error(chalk.red(`Unknown issue id: ${argv.issueId}`));

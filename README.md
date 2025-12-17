@@ -12,6 +12,10 @@ MongoDB administrators run into the same handful of emergencies again and again.
 # Install dependencies
 npm install
 
+# Optional: configure a default connection string via .env
+cp .env.example .env
+# Edit .env and set MONGODB_URI=...
+
 # List top-level categories
 npx mongo-toolkit categories
 
@@ -22,6 +26,26 @@ npx mongo-toolkit list performance
 npx mongo-toolkit run performance:slow-queries \
   --uri "mongodb://admin:secret@db01/?replicaSet=rs0" \
   --database app
+
+# Or, if MONGODB_URI is set (for example via .env), you can omit --uri:
+npx mongo-toolkit run performance:slow-queries --database app
+
+# You can also use the short alias:
+npx mongo-toolkit run performance:slow-queries -u "mongodb://admin:secret@db01/?replicaSet=rs0" --database app
+```
+
+## Seeding dummy data
+If you want a quick dataset to test diagnostics against, you can seed a database with dummy documents.
+
+```bash
+# 1) Install deps
+npm install
+
+# 2) Create a local .env (never commit it)
+cp .env.example .env
+
+# 3) Edit .env and set MONGODB_URI, then run:
+npm run seed -- --db app --collection dummy_records --count 1000000 --drop
 ```
 
 > ℹ️ All commands accept `--json` to emit machine-readable output, perfect for automation or GitHub Actions.
